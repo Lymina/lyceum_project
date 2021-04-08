@@ -1,6 +1,6 @@
 # lyceum_project
 Проект Гузь Елизаветы и Сарпинской Анастасии для Яндекс.Лицея (2021)
-токен бота - ODI4NzMyNjY1NjE1ODc2MTE3.YGt3cA.Tn9UcpO1ryyb2lW1Fss5bYxtk2E
+
 ИДЕНТИФИКАТОР ПРИЛОЖЕНИЯ - 828732665615876117
 ключ - 392f9583c1fb90fba46f0e567c0cd20b3eca0eacd151c7b99c7f8e178f412c15
 
