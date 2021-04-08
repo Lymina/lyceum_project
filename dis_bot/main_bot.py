@@ -3,7 +3,7 @@ import asyncio
 from discord.ext import commands
 import random
 
-TOKEN = "ODI4NzMyNjY1NjE1ODc2MTE3.YGt3cA.W-Ty1DE9JbQp-lv9iavb-VlLHN0"  # токен бота
+TOKEN = "как оказалось дискорд может найти слитый токен по всему интернету, поэтому в свободном доступе его быть НЕ МОЖЕТ"  # токен бота
 # чтобы "активировать" команду пользователь должен написать ">" перед сообщением
 bot = commands.Bot(command_prefix='>')
 
