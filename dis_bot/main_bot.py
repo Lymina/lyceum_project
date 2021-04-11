@@ -4,7 +4,9 @@ from discord.ext import commands
 import random
 from decoder import decoder
 from config import settings
-import json, requests
+import json
+import requests
+from googletrans import Translator
 
 TOKEN = "тут мог бы быть токен"
 # чтобы "активировать" команду пользователь должен написать ">" перед сообщением
@@ -13,8 +15,10 @@ client = discord.Client()
 flag_expect = 0  # игра ещё не началась, игроки только набираются, можно брать роль
 flag_game_now = 0  # игра идёт прямо сейчас
 
+
 def color_str(text):  # делает текст жирным
     return f'**{text}**'
+
 
 def get_quote():
   response = requests.get("https://zenquotes.io/api/random")
@@ -22,10 +26,11 @@ def get_quote():
   quote = json_data[0]['q'] + "\n -" + json_data[0]['a']
   return(quote)
 
-'''def translate(textToTranslate):
-    Response = requests.get\
-        (f'http://translate.google.ru/translate_a/t?client=x&text={textToTranslate}&hl=en&sl=en&tl=ru')
-    print(Response.text)'''
+
+def translate(text_to_translate):  # beta
+    translator = Translator()
+    translation = translator.translate(text_to_translate, dest='ru', src='en')
+    return translation.text
 
 
 @bot.command()
@@ -53,6 +58,15 @@ async def citata(ctx):
     await ctx.send(f'''{ctx.message.author.mention}, не грусти! Лучше прочитай цитату дня:
     >>> {text}\n
     >>> {translate(text)}''')
+    
+    
+@bot.command()
+async def give(ctx, member: discord.Member, role: discord.Role):
+    try:
+        getrole = discord.utils.get(ctx.guild.roles, id=role.id)
+        await member.add_roles(getrole)
+    except Exception:
+        await ctx.send(f'Неверное имя пользователя или роль! ({member}, {role})')
 
 
 def stop_game():
