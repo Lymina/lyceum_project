@@ -51,8 +51,8 @@ async def new_game(ctx):
 async def citata(ctx):
     text = get_quote()
     await ctx.send(f'''{ctx.message.author.mention}, не грусти! Лучше прочитай цитату дня:
-    {text} \n
-    {translate(text)}''')
+    >>> {text}\n
+    >>> {translate(text)}''')
 
 
 def stop_game():
