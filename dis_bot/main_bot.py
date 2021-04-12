@@ -2,8 +2,6 @@ import discord
 import asyncio
 from discord.ext import commands
 import random
-from decoder import decoder
-from config import settings
 import json
 import requests
 from googletrans import Translator
@@ -21,10 +19,10 @@ def color_str(text):  # делает текст жирным
 
 
 def get_quote():
-  response = requests.get("https://zenquotes.io/api/random")
-  json_data = json.loads(response.text)
-  quote = json_data[0]['q'] + "\n -" + json_data[0]['a']
-  return(quote)
+    response = requests.get("https://zenquotes.io/api/random")
+    json_data = json.loads(response.text)
+    quote = json_data[0]['q'] + "\n -" + json_data[0]['a']
+    return quote
 
 
 def translate(text_to_translate):  # beta
@@ -43,7 +41,6 @@ async def help_me(ctx):
      специально для тебя мотивирующую цитату  (ﾉ◕ヮ◕)ﾉ*:･ﾟ✧''')
 
 
-
 @bot.command(name='new_game')
 async def new_game(ctx):
     flag_expect = 0
@@ -52,26 +49,27 @@ async def new_game(ctx):
     \nВсех желающих присоединиться к игре просим взять у нашего бота роль "Игрок".
     \nИграть мы будем на нашем текстовом канале {color_str("город-n")}, так что топайте туда ^w^''')
 
+
 @bot.command(name='i_am_sad')
 async def citata(ctx):
     text = get_quote()
     await ctx.send(f'''{ctx.message.author.mention}, не грусти! Лучше прочитай цитату дня:
     >>> {text}\n
     >>> {translate(text)}''')
-    
-    
+
+
 @bot.command()
 async def give(ctx, member: discord.Member, role: discord.Role):
     try:
-        getrole = discord.utils.get(ctx.guild.roles, id=role.id)
-        await member.add_roles(getrole)
+        get_role = discord.utils.get(ctx.guild.roles, id=role.id)
+        await member.add_roles(get_role)
     except Exception:
         await ctx.send(f'Неверное имя пользователя или роль! ({member}, {role})')
 
 
 def stop_game():
     # вставить обнуление роли Игрок(!)
-    flag_game_now = 0 # игра закончилась, опускаем флаг
+    flag_game_now = 0  # игра закончилась, опускаем флаг
 
 
 bot.run(TOKEN)  # запуск бота через токен
