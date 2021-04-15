@@ -3,36 +3,42 @@ import asyncio
 from discord.ext import commands
 import random
 import json
-import request
+import requests
 from translate import Translator
 
 TOKEN = 'тут мог бы быть токен'
 # чтобы "активировать" команду пользователь должен написать ">" перед сообщением
-bot = commands.Bot(command_prefix = '>')
+bot = commands.Bot(command_prefix='>')
 client = discord.Client()
 
+
 # в булочную через Китай, здесь обитают все переменные (да, проще было сделать нельзя)
-class V_bylochnyy_cherez_Kitai:
+class ToTheBakeryThroughСhina:
     def __init__(self):
         self.flag_new_game = 0  # игра ещё не началась, игроки только набираются, можно брать роль
-        self.flag_now_gane = 0 # игра идёт прямо сейчас
-        self.spis_gamers = []
+        self.flag_now_game = 0  # игра идёт прямо сейчас
+        self.list_gamers = []
 
-help_everything = V_bylochnyy_cherez_Kitai()
 
-def color_str(text): # делает текст жирным
+help_everything = ToTheBakeryThroughСhina()
+
+
+def color_str(text):  # делает текст жирным
     return f'**{text}**'
 
-def get_quote():  # функция для получения мотивирующих цитат через api
-  response = requests.get("https://zenquotes.io/api/random")
-  json_data = json.loads(response.text)
-  quote = json_data[0]['q'] + "\n -" + json_data[0]['a']
-  return(quote)
 
-def translate(text_to_translate): # функция перевода цитат (не работает)
+def get_quote():  # функция для получения мотивирующих цитат через api
+    response = requests.get("https://zenquotes.io/api/random")
+    json_data = json.loads(response.text)
+    quote = json_data[0]['q'] + "\n -" + json_data[0]['a']
+    return quote
+
+
+def translate(text_to_translate):  # функция перевода цитат (не работает)
     translator = Translator(from_lang='en', to_lang='ru')  # обоз
     end_text = translator.translate(text_to_translate)
     return text_to_translate
+
 
 @bot.command()  # помогалка, тут всё понятно
 async def help_me(ctx):
@@ -47,6 +53,7 @@ async def help_me(ctx):
     
     * {color_str('>i_am_sad')} - Тебе грустно? Ничего страшного, я выведу
      специально для тебя мотивирующую цитату  (ﾉ◕ヮ◕)ﾉ*:･ﾟ✧''')
+
 
 @bot.command(name='new_game')  # начало новой сессии, открываем комнату ожидания, можно брть роли
 async def new_game(ctx):
@@ -64,9 +71,11 @@ async def new_game(ctx):
 async def start_game(ctx):  # начало игры(!), раскидываем персонажей между игроками, роли брять нельзя
     help_everything.flag_new_game = 0  # больше роли брать нельзя!
     help_everything.flag_now_gane = 1  # игра началась
-    await ctx.send(f'Комната ожидания закрыта! Кто не успел, тот опоздал! Роли брать нельзя до следующей игровой сессии!'
-                   f'Игроки, когда увидете в канале "город-n" сообщение можете начинать!'
-                   f'Наблюдатели, следите, чтобы всё было честно!')
+    await ctx.send(
+        f'Комната ожидания закрыта! Кто не успел, тот опоздал! Роли брать нельзя до следующей игровой сессии!'
+        f'Игроки, когда увидете в канале "город-n" сообщение можете начинать!'
+        f'Наблюдатели, следите, чтобы всё было честно!')
+
 
 @bot.command(name='i_am_sad')  # вывод мотивирующей цитаты на англиском (в планах перевод)
 async def citata(ctx):
@@ -74,26 +83,29 @@ async def citata(ctx):
     await ctx.send(f'''{ctx.message.author.mention}, не грусти! Лучше прочитай цитату дня:
     >>> {text}''')
 
+
 @bot.command()  # раздаёт роли игркам и заносит их в свой список (решить проблему с выводом из списка)
 async def give(ctx, member: discord.Member, role: discord.Role):
     if help_everything.flag_new_game == 1:  # делаем проверку, что комната ожидания открыта и роли брать можно
         try:
-            getrole = discord.utils.get(ctx.guild.roles, id=role.id)
-            await member.add_roles(getrole)  # выдаём роль
-            help_everything.spis_gamers.append(member)  # добавляем пользователя в список
-            await ctx.send(f'{member} получил\а роль {role}') # говорим, что всё получилось
+            get_role = discord.utils.get(ctx.guild.roles, id=role.id)
+            await member.add_roles(get_role)  # выдаём роль
+            help_everything.list_gamers.append(member)  # добавляем пользователя в список
+            await ctx.send(f'{member} получил(а) роль {role}')  # говорим, что всё получилось
         except Exception:
             # если не нашлось роли/игрка, то говорим об этом
             await ctx.send(f'Неверное имя пользователя или роль! ({member}, {role})')
     else:
         # если что-то пошло не так - говорим об этом чату
-        await ctx.send(f'''{ctx.message.author}, рано брать роли мы ещё не начали новую игру!
-        \nДля того чтобы начать новую игру введи команду ">new_game"''')
+        await ctx.send(f'''{ctx.message.author}, рано брать роли, мы ещё не начали новую игру!
+        \nДля того, чтобы начать новую игру введи команду ">new_game"''')
 
 
 def stop_game():  # завершение сессии игры, обнуляем всё
     # вставить обнуление роли Игрок(!)
-    help_flag.flag_game_now = 0 # игра закончилась, опускаем флаг
-    help_everything.spis_gamers = []  # опустошаем список, игроки расходятся
+    help_flag.flag_game_now = 0  # игра закончилась, опускаем флаг  # итак, сейчас я буду ругаться...
+    # ГДЕ НАХОДИТСЯ ЭТА ПЕРЕМЕННАЯ
+    help_everything.list_gamers = []  # опустошаем список, игроки расходятся
+
 
 bot.run(TOKEN)  # запуск бота через токен
