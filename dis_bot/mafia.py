@@ -1,14 +1,14 @@
-class Mafia:
+class Mafia:  # сторона мафии
     def __init__(self, players_nick, role, is_alive=True, don=False, is_doctored=False, is_seduced=False, votes=0):
-        self.role = role
-        self.votes = votes
-        self.nick = players_nick
-        self.is_alive = is_alive
-        self.don = don
-        self.is_doctored = is_doctored
-        self.is_seduced = is_seduced
+        self.role = role  # запись роли в формате строки неэффективно, но я поняла, что это может понадобиться для раскрытия роли, строка
+        self.votes = votes  # нужны для голосования, число
+        self.nick = players_nick  # ник игрока, это очевидно, строка
+        self.is_alive = is_alive  # статус: жив или мертв, логика
+        self.don = don  # "привилегии" мафиозной стороны, дон, логика
+        self.is_doctored = is_doctored  # статус: посещал ли его доктор или нет. обнуляется днем, логика
+        self.is_seduced = is_seduced  # статус: посещала ли его путана. обнуляется следующей ночью, то есть возможность голосовать отсутствует, логика
 
-    def kill(self, other_player):
+    def kill(self, other_player):  # одна из функций мафии, убийство
         if self.is_alive:
             if other_player.is_doctored:
                 other_player.is_doctored = False
@@ -17,22 +17,22 @@ class Mafia:
                 if not self.is_seduced:
                     other_player.is_alive = False
 
-    def vote(self, other_player):
+    def vote(self, other_player):  # голосование
         if self.is_alive:
-            if not self.is_seduced and self.is_alive:
+            if not self.is_seduced:
                 other_player.votes += 1
 
-    def checking(self, other_player):
+    def checking(self, other_player):  # возможность дона, проверка роли
         if self.is_alive:
             if self.don:
                 return other_player.role
 
 
-class Quite:
+class Quite:  # сторона мирных
     def __init__(self, players_nick, role, sheriff=False, doctor=False, is_alive=True, is_doctored=False,
-                 is_seduced=False, votes=0):
-        self.sheriff = sheriff
-        self.doctor = doctor
+                 is_seduced=False, votes=0):  # в принципе, то же самое, но есть новое
+        self.sheriff = sheriff  # "привилегии" мирной стороны, шериф, логика 
+        self.doctor = doctor  # "привилегии" мирной стороны, доктор, логика
         self.votes = votes
         self.is_seduced = is_seduced
         self.is_doctored = is_doctored
@@ -45,22 +45,22 @@ class Quite:
             if not self.is_seduced and self.is_alive:
                 other_player.votes += 1
 
-    def checking(self, other_player):
+    def checking(self, other_player):  # возможность шерифа, проверка роли
         if self.is_alive:
             if self.sheriff:
                 return other_player.role
 
-    def doctoring(self, other_player):
+    def doctoring(self, other_player):  # возможность доктора, лечение
         if self.is_alive:
             if self.doctor:
                 other_player.is_doctored = True
 
 
-class Other:
+class Other:  # "серая сторона"
     def __init__(self, players_nick, role, prostitute, maniac, is_alive=True, is_doctored=False,
                  is_seduced=False, votes=0):
-        self.maniac = maniac
-        self.prostitute = prostitute
+        self.maniac = maniac  # тип серой стороны, маньяк, логика
+        self.prostitute = prostitute  # тип серой стороны, путана
         self.votes = votes
         self.is_seduced = is_seduced
         self.is_doctored = is_doctored
@@ -73,7 +73,7 @@ class Other:
             if not self.is_seduced and self.is_alive:
                 other_player.votes += 1
 
-    def kill(self, other_player):
+    def kill(self, other_player):  # возможность маньяка, убийство
         if self.is_alive:
             if self.maniac:
                 if other_player.is_doctored:
@@ -83,7 +83,7 @@ class Other:
                     if not self.is_seduced:
                         other_player.is_alive = False
 
-    def seducing(self, other_player):
+    def seducing(self, other_player):  # возможность путаны, совращение
         if self.is_alive:
             if self.prostitute:
                 if other_player.is_alive:
