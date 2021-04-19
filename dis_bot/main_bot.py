@@ -5,6 +5,7 @@ import random
 import json
 import requests
 from translate import Translator
+from lists_roles import *
 
 TOKEN = 'тут мог бы быть токен'
 # чтобы "активировать" команду пользователь должен написать ">" перед сообщением
@@ -21,6 +22,36 @@ class ToTheBakeryThroughСhina:
 
 
 help_everything = ToTheBakeryThroughСhina()
+
+
+def distribution(members):  # пока просто функция. можно связать с основной прогой
+    length = len(members)
+    random.shuffle(members)
+    random.shuffle(members)
+    random.shuffle(members)
+    random.shuffle(members)  # чтоб уж наверняка :D
+    if length < 5:
+        return False, 'Увы, недостаточно игроков.'
+    elif length == 5:
+        return True, zip(members, FIVE_MEMBERS)
+    elif length == 6:
+        return True, zip(members, SIX_MEMBERS)
+    elif length == 7:
+        return True, zip(members, SEVEN_MEMBERS)
+    elif length == 8:
+        return True, zip(members, EIGHT_MEMBERS)
+    elif length == 9:
+        return True, zip(members, NINE_MEMBERS)
+    elif length == 10:
+        return True, zip(members, TEN_MEMBERS)
+    elif length == 11:
+        return True, zip(members, ELEVEN_MEMBERS)
+    elif length == 12:
+        return True, zip(members, TWELVE_MEMBERS)
+    elif length == 13:
+        return True, zip(members, THIRTEEN_MEMBERS)
+    else:
+        return False, 'Слишком много игроков, будет балаган ._.'
 
 
 def color_str(text):  # делает текст жирным
@@ -50,7 +81,7 @@ async def help_me(ctx):
     (чтобы писать в канале "город-n") или "Наблюдатель" (чтобы следить за игрой в канале "город-n") (>ω^)
     * {color_str(">start_game")} - Все игроки готовы? Отлично, введи эту команду и мы начнём!  
     ᄽὁȍ ̪ őὀᄿ
-    
+
     * {color_str('>i_am_sad')} - Тебе грустно? Ничего страшного, я выведу
      специально для тебя мотивирующую цитату  (ﾉ◕ヮ◕)ﾉ*:･ﾟ✧''')
 
@@ -60,7 +91,7 @@ async def new_game(ctx):
     help_everything.flag_new_game = 1
     # как вариант для отметки автора сообщения ctx.message.author.mention(c @) или ctx.message.author (без @)
     await ctx.send(f'''Игрок {ctx.message.author.mention} объявил набор в новую игру! Комната ожидания открыта! 
-    
+
     \nВсех желающих присоединиться к игре просим взять у нашего бота роль "Игрок",\
      те кто хотят просто посмотреть за ходом игры пусть возьмут роль "Наблюдатель". 
      Для этого напишите команду (>give @"пользователь" @"роль")
@@ -103,8 +134,7 @@ async def give(ctx, member: discord.Member, role: discord.Role):
 
 def stop_game():  # завершение сессии игры, обнуляем всё
     # вставить обнуление роли Игрок(!)
-    help_flag.flag_game_now = 0  # игра закончилась, опускаем флаг  # итак, сейчас я буду ругаться...
-    # ГДЕ НАХОДИТСЯ ЭТА ПЕРЕМЕННАЯ
+    help_everything.flag_game_now = 0  # игра закончилась, опускаем флаг
     help_everything.list_gamers = []  # опустошаем список, игроки расходятся
 
 
