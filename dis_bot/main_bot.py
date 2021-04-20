@@ -108,10 +108,10 @@ def transfer_players(distribution_tuple):  # используется в пар�
     if distribution_tuple[0]:
         for mem_num in distribution_tuple[1]:  # mem_num - кортеж, т.к. второй элемент входного кортежа - это список
             # кортежей, который возвращает функция zip
+            player = mem_num[0]  # это представитель класса discord.Member
             cur = DB.cursor()
             cur.execute(f"""INSERT INTO players(id, nick_name, nick_id, role)
-            VALUES({distribution_tuple[1].index(mem_num) + 1}, {mem_num[0]}, {mem_num[1]}, {mem_num[1]})""").fetchall()
-            # я не уверена в типе данных игрока, то ли это строка, то ли что-то другое... оставлю пока так
+            VALUES({distribution_tuple[1].index(mem_num) + 1}, {player.nick}, {player.id}, {mem_num[1]})""").fetchall()
     else:
         await bot.wait_until_ready()
         main_channel = bot.get_channel(MAIN_CHANNEL)  # определяем нужный нам чат по id
