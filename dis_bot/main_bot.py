@@ -62,6 +62,8 @@ async def rule_for_play():  # для игры, когда все роли соз
 
 
 def distribution(members):  # функция раскидки ролей
+    # КРАЙНЕ ВАЖНО
+    # каждый элемент списка members должен иметь тип данных discord.Member
     length = len(members)
     random.shuffle(members)
     random.shuffle(members)
