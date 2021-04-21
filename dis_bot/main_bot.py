@@ -1,39 +1,40 @@
-import discord
 import asyncio
-from discord.ext import commands
-import random
 import json
-import requests
-from translate import Translator
-from lists_roles import *
-import tracemalloc
+import random
 import sqlite3
+import tracemalloc
+
+import discord
+import requests
+from discord.ext import commands
+
+from lists_roles import *
 
 tracemalloc.start()
 intents = discord.Intents.default()
 intents.members = True
 
-
 TOKEN = 'тут мог бы быть токен'
-MAIN_CHANNEL = 0  # id главного канала
-TOWN_N_CHANNEL = 0  # id города-n
+MAIN_CHANNEL_ID = 0  # id главного канала
+TOWN_N_CHANNEL_ID = 0  # id города-n
 DB = sqlite3.connect("db/roles_players.sqlite")  # подключаемся к нужной БД (создание курсоров ниже)
 
 # чтобы "активировать" команду пользователь должен написать ">" перед сообщением
 bot = commands.Bot(command_prefix='>')
 client = discord.Client()
-town_n_channel = bot.get_channel(TOWN_N_CHANNEL)  # определяем канал по id
+TOWN_N_CHANNEL = bot.get_channel(TOWN_N_CHANNEL_ID)  # определяем канал по id
 
 
 # в булочную через Китай, здесь обитают все переменные (да, проще было сделать нельзя)
-class ToTheBakeryThroughСhina:
+class ToTheBakeryThroughChina:
     def __init__(self):
         self.flag_new_game = 0  # игра ещё не началась, игроки только набираются, можно брать роль
         self.flag_now_game = 0  # игра идёт прямо сейчас
         self.list_gamers = []  # список игрков
         self.count_id = 0
 
-help_everything = ToTheBakeryThroughСhina()
+
+help_everything = ToTheBakeryThroughChina()
 
 
 def color_str(text):  # делает текст жирным
@@ -49,10 +50,9 @@ def get_quote():  # функция для получения мотивирую�
 
 async def rule_for_play():  # правила для игры, когда все роли созданы и игра только началась
     await bot.wait_until_ready()
-    town_n_channel = bot.get_channel(TOWN_N_CHANNEL)  # определяем нужный нам чат по id
     # отправляем сообщения
-    await town_n_channel.send('Итак, все роли разданы, а мафиози познакомились! Мы начинаем!')
-    await town_n_channel.send('''```Уважаемые жители, у меня для вас ужасные новости! В городе завелась мафия!!! Ваша 
+    await TOWN_N_CHANNEL.send('Итак, все роли разданы, а мафиози познакомились! Мы начинаем!')
+    await TOWN_N_CHANNEL.send('''```Уважаемые жители, у меня для вас ужасные новости! В городе завелась мафия!!! Ваша 
     цель истребить заразу и снова сделать город безопасным. Цель мафии подчнить себе город, истребив жалких жителей. 
     Наша игра будет состоять из 2 периодов: день и ночь. Ночью активные роли совершают свои действия, а днём мы все 
     дружно решаеим кого повесить ^w^ Все всё поняли? Отлично! Мы начинаем (⌐■_■)```''')
@@ -62,7 +62,7 @@ async def rule_for_play():  # правила для игры, когда все 
 
 async def distribution(members):  # функция раскидки ролей
     await bot.wait_until_ready()
-    town_n_channel = bot.get_channel(TOWN_N_CHANNEL)  # определяем нужный нам чат по id
+    town_n_channel = bot.get_channel(TOWN_N_CHANNEL_ID)  # определяем нужный нам чат по id
     # КРАЙНЕ ВАЖНО
     # каждый элемент списка members должен иметь тип данных discord.Member
     # discord.Member выглядит +- так
@@ -134,34 +134,35 @@ async def distribution(members):  # функция раскидки ролей
         await town_n_channel.send('Слишком много игроков, будет балаган ._.')
         return False
 
-def transfer_players(spis_of_gamer_and_role):  # записывае в БД (roles_players.sqlite) игрок-роль
+
+def transfer_players(list_of_gamer_and_role):  # записывае в БД (roles_players.sqlite) игрок-роль
     # для справки player выглядит так
     # [<Member id=768054429165027359 name='Lymina ^._.^' discriminator='1843' bot=False nick=None guild=<Guild
     # id=829821880549900298 name='Тест сервер для мафии ^w^' shard_id=None chunked=False member_count=3>>]
 
-    for player, role in spis_of_gamer_and_role:
-        cur = DB.cursor() # создаём курсор
-        help_everything.count_id += 1 # ведём учет id
+    for player, role in list_of_gamer_and_role:
+        cur = DB.cursor()  # создаём курсор
+        help_everything.count_id += 1  # ведём учет id
 
         # заносим даные по игроку в БД
         a = (help_everything.count_id, player.name + '#' + player.discriminator, player.id, role)
-        cur.execute(f"""INSERT INTO players(id, nick_name, nick_id, role) VALUES(?, ?, ?, ?)""", a)
+        cur.execute(f"""INSERT INTO players(id, nick_name, nick_id, role) VALUES({a[0]}, {a[1]}, {a[2]}, {a[3]})""")
+
 
 def say_rule_for_member(name):  # смотрит роль игорка в БД и создаёт текст роль-возможности
-    cur = DB.cursor() # создаём курсор
+    cur = DB.cursor()  # создаём курсор
     # получаем роль игрока и отправляем её пользователю с инструкцией
     result = cur.execute("""SELECT * FROM players WHERE nick_name = ?""", (name,)).fetchall()
-    return f'{name}, твоя роль {result[0][3]}! ' \
-           f'\n {MSG_ROLS[result[0][3]]}'
+    return f'{name}, твоя роль {result[0][3]}!\n{MSG_ROLES[result[0][3]]}'
+
 
 async def distribution_roles():
     # отправляет запрос для текста про роль игрока и отсылает его в лс, так для каждого кто есть в списке
     await bot.wait_until_ready()
-
     for memb in help_everything.list_gamers:  # пробегаемся по игрокам
         user_name = await bot.fetch_user(memb.id)  # ищем имя пользователя
         text = say_rule_for_member(user_name)  # определяем какой будем отправлять пользователю текст
-        user.send(text)  # отправляем текст
+        await user_name.send(text)  # отправляем текст
 
 
 @bot.command()  # помогалка, тут всё понятно
@@ -196,7 +197,7 @@ async def start_game(ctx):
     await ctx.send('''Комната ожидания закрыта! Кто не успел, тот опоздал! Роли брать нельзя до следующей игровой 
     сессии! Игроки, когда увидете в канале "город-n" сообщение можете начинать! Наблюдатели, следите, чтобы всё было 
     честно!''')
-    distribution(help_everything.list_gamers)  # начинаем раскидку ролей, мостик переход
+    await distribution(help_everything.list_gamers)  # начинаем раскидку ролей, мостик переход
 
 
 @bot.command(name='i_am_sad')  # вывод мотивирующей цитаты на англиском (в планах перевод)
