@@ -10,11 +10,14 @@ import tracemalloc
 import sqlite3
 
 tracemalloc.start()
+intents = discord.Intents.default()
+intents.members = True
+
 
 TOKEN = 'тут мог бы быть токен'
 MAIN_CHANNEL = 0  # id главного канала
 TOWN_N_CHANNEL = 0  # id города-n
-DB = sqlite3.connect("db/roles_players.sqlite")
+DB = sqlite3.connect("db/roles_players.sqlite")  # подключаемся к нужной БД (создание курсоров ниже)
 
 # чтобы "активировать" команду пользователь должен написать ">" перед сообщением
 bot = commands.Bot(command_prefix='>')
@@ -28,7 +31,7 @@ class ToTheBakeryThroughСhina:
         self.flag_new_game = 0  # игра ещё не началась, игроки только набираются, можно брать роль
         self.flag_now_game = 0  # игра идёт прямо сейчас
         self.list_gamers = []  # список игрков
-
+        self.count_id = 0
 
 help_everything = ToTheBakeryThroughСhina()
 
@@ -44,13 +47,7 @@ def get_quote():  # функция для получения мотивирую�
     return quote
 
 
-def translate(text_to_translate):  # функция перевода цитат (не работает)
-    translator = Translator(from_lang='en', to_lang='ru')  # обоз
-    end_text = translator.translate(text_to_translate)
-    return text_to_translate
-
-
-async def rule_for_play():  # для игры, когда все роли созданы и игра только началась
+async def rule_for_play():  # правила для игры, когда все роли созданы и игра только началась
     await bot.wait_until_ready()
     town_n_channel = bot.get_channel(TOWN_N_CHANNEL)  # определяем нужный нам чат по id
     # отправляем сообщения
@@ -60,10 +57,18 @@ async def rule_for_play():  # для игры, когда все роли соз
     Наша игра будет состоять из 2 периодов: день и ночь. Ночью активные роли совершают свои действия, а днём мы все 
     дружно решаеим кого повесить ^w^ Все всё поняли? Отлично! Мы начинаем (⌐■_■)```''')
 
+    # начинаем циклы день-ночь, мостик переход(!)
 
-def distribution(members):  # функция раскидки ролей
+
+async def distribution(members):  # функция раскидки ролей
+    await bot.wait_until_ready()
+    town_n_channel = bot.get_channel(TOWN_N_CHANNEL)  # определяем нужный нам чат по id
     # КРАЙНЕ ВАЖНО
     # каждый элемент списка members должен иметь тип данных discord.Member
+    # discord.Member выглядит +- так
+    # [<Member id=768054429165027359 name='Lymina ^._.^' discriminator='1843' bot=False nick=None guild=<Guild
+    # id=829821880549900298 name='Тест сервер для мафии ^w^' shard_id=None chunked=False member_count=3>>]
+
     length = len(members)
     random.shuffle(members)
     random.shuffle(members)
@@ -71,53 +76,92 @@ def distribution(members):  # функция раскидки ролей
     random.shuffle(members)  # чтоб уж наверняка :D
     # минимальное кол-во 5
     if length < 5:
-        return False, 'Увы, недостаточно игроков.'
+        # говорим, что не так и возвращаем False
+        await town_n_channel.send('Увы, недостаточно игроков.')
+        return False
     # если всё получается
     elif length == 5:
-        bot.loop.create_task(rule_for_play())  # выводим сообщение, что игра началась
-        return True, zip(members, FIVE_MEMBERS)  # возвращаем, что всё хорошо и список списков из человек-роль
+        transfer_players(list(zip(members, FIVE_MEMBERS)))  # вводим в БД раскидку на человек-роль
+        # list(zip(members, ∞_MEMBERS)) вернёт [(discord.Member, роль)....(discord.Member, роль)]
+        bot.loop.create_task(distribution_roles())  # отправляем каждому игроку его роль в лс
+        bot.loop.create_task(rule_for_play())  # выводим сообщение, что роли раскиданы, а игра началась, мостик переход
+        return True  # возвращаем, что всё хорошо
+
     # и так для каждого кол-ва игроков, для всех разные сценарии
     elif length == 6:
+        transfer_players(list(zip(members, SIX_MEMBERS)))
+        bot.loop.create_task(distribution_roles())  # отправляем каждому игроку его роль в лс
         bot.loop.create_task(rule_for_play())
-        return True, zip(members, SIX_MEMBERS)
+        return True
     elif length == 7:
+        transfer_players(list(zip(members, SEVEN_MEMBERS)))
+        bot.loop.create_task(distribution_roles())  # отправляем каждому игроку его роль в лс
         bot.loop.create_task(rule_for_play())
-        return True, zip(members, SEVEN_MEMBERS)
+        return True
     elif length == 8:
+        transfer_players(list(zip(members, EIGHT_MEMBERS)))
+        bot.loop.create_task(distribution_roles())  # отправляем каждому игроку его роль в лс
         bot.loop.create_task(rule_for_play())
-        return True, zip(members, EIGHT_MEMBERS)
+        return True
     elif length == 9:
+        transfer_players(list(zip(members, NINE_MEMBERS)))
+        bot.loop.create_task(distribution_roles())  # отправляем каждому игроку его роль в лс
         bot.loop.create_task(rule_for_play())
-        return True, zip(members, NINE_MEMBERS)
+        return True
     elif length == 10:
+        transfer_players(list(zip(members, TEN_MEMBERS)))
+        bot.loop.create_task(distribution_roles())  # отправляем каждому игроку его роль в лс
         bot.loop.create_task(rule_for_play())
-        return True, zip(members, TEN_MEMBERS)
+        return True
     elif length == 11:
+        transfer_players(list(zip(members, ELEVEN_MEMBERS)))
+        bot.loop.create_task(distribution_roles())  # отправляем каждому игроку его роль в лс
         bot.loop.create_task(rule_for_play())
-        return True, zip(members, ELEVEN_MEMBERS)
+        return True
     elif length == 12:
+        transfer_players(list(zip(members, TWELVE_MEMBERS)))
+        bot.loop.create_task(distribution_roles())  # отправляем каждому игроку его роль в лс
         bot.loop.create_task(rule_for_play())
-        return True, zip(members, TWELVE_MEMBERS)
+        return True
     elif length == 13:
+        transfer_players(list(zip(members, THIRTEEN_MEMBERS)))
+        bot.loop.create_task(distribution_roles())  # отправляем каждому игроку его роль в лс
         bot.loop.create_task(rule_for_play())
-        return True, zip(members, THIRTEEN_MEMBERS)
+        return True
     # максимальное кол-во игоров 13
     else:
-        return False, 'Слишком много игроков, будет балаган ._."'
+        # говорим, что не так и возвращаем False
+        await town_n_channel.send('Слишком много игроков, будет балаган ._.')
+        return False
 
+def transfer_players(spis_of_gamer_and_role):  # записывае в БД (roles_players.sqlite) игрок-роль
+    # для справки player выглядит так
+    # [<Member id=768054429165027359 name='Lymina ^._.^' discriminator='1843' bot=False nick=None guild=<Guild
+    # id=829821880549900298 name='Тест сервер для мафии ^w^' shard_id=None chunked=False member_count=3>>]
 
-def transfer_players(distribution_tuple):  # используется в паре с вышенаписанной функцией
-    if distribution_tuple[0]:
-        for mem_num in distribution_tuple[1]:  # mem_num - кортеж, т.к. второй элемент входного кортежа - это список
-            # кортежей, который возвращает функция zip
-            player = mem_num[0]  # это представитель класса discord.Member
-            cur = DB.cursor()
-            cur.execute(f"""INSERT INTO players(id, nick_name, nick_id, role)
-            VALUES({distribution_tuple[1].index(mem_num) + 1}, {player.nick}, {player.id}, {mem_num[1]})""").fetchall()
-    else:
-        await bot.wait_until_ready()
-        main_channel = bot.get_channel(MAIN_CHANNEL)  # определяем нужный нам чат по id
-        await main_channel.send(f'{distribution_tuple[1]}')
+    for player, role in spis_of_gamer_and_role:
+        cur = DB.cursor() # создаём курсор
+        help_everything.count_id += 1 # ведём учет id
+
+        # заносим даные по игроку в БД
+        a = (help_everything.count_id, player.name + '#' + player.discriminator, player.id, role)
+        cur.execute(f"""INSERT INTO players(id, nick_name, nick_id, role) VALUES(?, ?, ?, ?)""", a)
+
+def say_rule_for_member(name):  # смотрит роль игорка в БД и создаёт текст роль-возможности
+    cur = DB.cursor() # создаём курсор
+    # получаем роль игрока и отправляем её пользователю с инструкцией
+    result = cur.execute("""SELECT * FROM players WHERE nick_name = ?""", (name,)).fetchall()
+    return f'{name}, твоя роль {result[0][3]}! ' \
+           f'\n {MSG_ROLS[result[0][3]]}'
+
+async def distribution_roles():
+    # отправляет запрос для текста про роль игрока и отсылает его в лс, так для каждого кто есть в списке
+    await bot.wait_until_ready()
+
+    for memb in help_everything.list_gamers:  # пробегаемся по игрокам
+        user_name = await bot.fetch_user(memb.id)  # ищем имя пользователя
+        text = say_rule_for_member(user_name)  # определяем какой будем отправлять пользователю текст
+        user.send(text)  # отправляем текст
 
 
 @bot.command()  # помогалка, тут всё понятно
@@ -152,7 +196,7 @@ async def start_game(ctx):
     await ctx.send('''Комната ожидания закрыта! Кто не успел, тот опоздал! Роли брать нельзя до следующей игровой 
     сессии! Игроки, когда увидете в канале "город-n" сообщение можете начинать! Наблюдатели, следите, чтобы всё было 
     честно!''')
-    distribution(help_everything.list_gamers)  # начинаем раскидку ролей
+    distribution(help_everything.list_gamers)  # начинаем раскидку ролей, мостик переход
 
 
 @bot.command(name='i_am_sad')  # вывод мотивирующей цитаты на англиском (в планах перевод)
@@ -183,6 +227,23 @@ def stop_game():  # завершение сессии игры, обнуляем
     # вставить обнуление роли Игрок(!)
     help_everything.flag_game_now = 0  # игра закончилась, опускаем флаг
     help_everything.list_gamers = []  # опустошаем список, игроки расходятся
+    help_everything.count_id = 0
 
 
 bot.run(TOKEN)  # запуск бота через токен
+
+# Ход игры
+# 1 - кто-то начинает сессию через new_game
+# 2 - игроки берут роли, пока кто-то не пишет start_game
+# 3 - идёт раскидка ролей и их занос в БД
+#   отправка ролей кажому игроку distribution_roles + say_rule_for_member
+# 4 - бот объявляет, что игра начинается - rule_for_play
+# 5 ∞ циклы день-ночь
+# ночь: бот принимает действия по порядку от: мафии, врача, путаны, маньяка, дона, шерифа (см сценарий игры)
+# день: бот говорит кого убили и ждёт решения игроков (условно >команда @Игрок, бот его убивает и говорит его роль)
+# после завершения каждого периода проверка на то не выйгра ла ли одна из сторон (сравнение кол-ва игроков на сторонах)
+# 6 - объявление результатов
+# 7 - чистка всех и вся
+
+# те new_game (+) -> give (+) -> start_game (+) -> внутренние функции(distribution + distribution_roles) ->
+# rule_for_play (+) -> циклы день∞ночь∞проверка на выйгрыш -> объявление результатов -> чистка всех и вся
