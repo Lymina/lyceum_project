@@ -176,7 +176,18 @@ class Game:
         pass
 
     def day(self):
-        pass
+        for i in self.mafia:
+            if not i.is_alive:
+                self.dead += [i]
+        for i in self.quite:
+            if not i.is_alive:
+                self.dead += [i]
+        for i in self.other:
+            if not i.is_alive:
+                self.dead += [i]
+        # а дальше...
+        # а что дальше, я не знаю ._.
+
 
     def victory(self):
         if len(self.mafia) == 0:
