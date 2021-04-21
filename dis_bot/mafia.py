@@ -88,3 +88,28 @@ class Other:  # "серая сторона"
             if self.prostitute:
                 if other_player.is_alive:
                     other_player.is_seduced = True
+
+
+class Game:
+    def __init__(self, list_mafia, list_quite, list_other=None):  # в каждом списке есть объекты соответствующих
+        # типов, серая сторона добавляется только при достаточном количестве игроков, поэтому None
+        if list_other is None:
+            list_other = []
+        self.mafia = list_mafia
+        self.quite = list_quite
+        self.other = list_other
+
+    def night(self):
+        pass
+
+    def day(self):
+        pass
+
+    def victory(self):
+        if len(self.mafia) == 0:
+            if len(self.other) == 0:
+                return 'В городе воцарился мир и порядок! Неорганизованная преступность искоренена! Ура!'
+            else:
+                return 'В городе возобладала неорганизованная преступность. Да будет хаос!'
+        else:
+            return 'Власть в городе захвачена мафией!'
