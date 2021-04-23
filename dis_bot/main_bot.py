@@ -9,7 +9,7 @@ import requests
 from discord.ext import commands
 
 from lists_roles import *
-from dis_bot.lists_roles import MSG_ROLS
+from lists_roles import MSG_ROLS
 
 tracemalloc.start()
 intents = discord.Intents.default()
@@ -71,15 +71,55 @@ async def night():  # правила для игры, когда все роли
     cur = DB.cursor()  # создаём курсор
 
     # проверяем есть ли в БД роль "путана"
+    result = cur.execute("SELECT * FROM players WHERE role = ?;", ('мафия',)).fetchall()
+    if result:
+        user_name = await bot.fetch_user(result[0][2])  # ищем имя пользователя по id
+        await user_name.send('Старина, закончились прекрасные времена, когда мы могли веселиться. Может, '
+                             'кокнув шерифа, это времечко вернется?')
+        await user_name.send('Старина, это наши вероятные враги, выбирай. В качестве ответа напиши команду ">answer '
+                             '"номер игрока"".')
+        for num in help_everything.dikt_gamers:
+            await user_name.send(f'{num} - {help_everything.dikt_gamers[num]}')
+    result = cur.execute("SELECT * FROM players WHERE role = ?;", ('доктор',)).fetchall()
+    if result:
+        user_name = await bot.fetch_user(result[0][2])  # ищем имя пользователя по id
+        await user_name.send('Док, на улицах творится беспредел, твоя помощь как никогда важна!')
+        await user_name.send('Это те, кто могут пострадать. В качестве ответа напиши команду ">answer "номер игрока"".')
+        for num in help_everything.dikt_gamers:
+            await user_name.send(f'{num} - {help_everything.dikt_gamers[num]}')
     result = cur.execute("SELECT * FROM players WHERE role = ?;", ('путана',)).fetchall()
     if result:
         user_name = await bot.fetch_user(result[0][2])  # ищем имя пользователя по id
-        user_name.send('Добрый вечер, дорогая! К кому заглянем на кружечку чая сегодня?)')
-        user_name.send(f'Вот игроки к которым мы можем заглянуть, '
-                       f'в качестве ответа напиши команду ">answer "номер игрока""')
+        await user_name.send('Добрый вечер, дорогая! К кому заглянем на кружечку чая сегодня?)')
+        await user_name.send('Вот игроки к которым мы можем заглянуть, в качестве ответа напиши команду ">answer '
+                             '"номер игрока"".')
         for num in help_everything.dikt_gamers:
-            user_name.send(f'{num}- {help_everything[num]}')
-        
+            await user_name.send(f'{num} - {help_everything.dikt_gamers[num]}')
+    result = cur.execute("SELECT * FROM players WHERE role = ?;", ('маньяк',)).fetchall()
+    if result:
+        user_name = await bot.fetch_user(result[0][2])  # ищем имя пользователя по id
+        await user_name.send('Чел, я наконец-то до тебя дошел! Кого мы зарЭжем?')
+        await user_name.send('Вот игроки которых мы можем зарЭзать, в качестве ответа напиши команду ">answer "номер '
+                             'игрока"".')
+        for num in help_everything.dikt_gamers:
+            await user_name.send(f'{num} - {help_everything.dikt_gamers[num]}')
+    result = cur.execute("SELECT * FROM players WHERE role = ?;", ('дон',)).fetchall()
+    if result:
+        user_name = await bot.fetch_user(result[0][2])  # ищем имя пользователя по id
+        await user_name.send('Босс, нам необходимо найти шерифа. Он представляет собой весомую угрозу')
+        await user_name.send('Вот игроки, которых нам стоит подозревать, Босс. В качестве ответа напишите команду '
+                             '">answer "номер игрока"".')
+        for num in help_everything.dikt_gamers:
+            await user_name.send(f'{num} - {help_everything.dikt_gamers[num]}')
+    result = cur.execute("SELECT * FROM players WHERE role = ?;", ('шериф',)).fetchall()
+    if result:
+        user_name = await bot.fetch_user(result[0][2])  # ищем имя пользователя по id
+        await user_name.send('Шериф, нам необходимо найти каждого мафиози. Они представляет собой весомую угрозу.')
+        await user_name.send('Вот игроки, которых нам стоит подозревать. В качестве ответа напишите команду '
+                             '">answer "номер игрока"".')
+        for num in help_everything.dikt_gamers:
+            await user_name.send(f'{num} - {help_everything.dikt_gamers[num]}')
+
     # путана вводит свой ответ, идём дальше..
 
 
@@ -205,8 +245,7 @@ def say_rule_for_member(name):  # смотрит роль игорка в БД �
     # получаем роль игрока и отправляем её пользователю с инструкцией
     result = cur.execute("SELECT * FROM players WHERE nick_name = ?;", (str(name),)).fetchall()
     # возвращает что-то вроде [(1, 'Lymina ^._.^#1843', 768054429165027359, 'мафия')]
-    return [f'{name}, твоя роль {result[0][3]}! ' \
-            f'\n {MSG_ROLS[result[0][3]]}', result[0][3]]
+    return [f'{name}, твоя роль {result[0][3]}!\n {MSG_ROLS[result[0][3]]}', result[0][3]]
 
 
 async def distribution_roles():
@@ -314,11 +353,21 @@ async def answer(ctx, count_in_spis):
 
     if aut_role == 'мафия' or aut_role == 'маньяк':
         # в список ночных действий передаем кортэж с id убитого и типом действия [(id, "убит")]
-        help_everything.spis_night_move.append((help_everything.dikt_gamers[count_in_spis], 'убит'))
+        if (help_everything.dikt_gamers[count_in_spis], 'вылечен') not in help_everything.spis_night_move:
+            help_everything.spis_night_move.append((help_everything.dikt_gamers[count_in_spis], 'убит'))
+            # если игрока посещал доктор, его убить нельзя
+        else:
+            user_name = await bot.fetch_user(id_aut)  # ищем имя пользователя по id
+            await user_name.send('Чувак, его посетил доктор. Придется подождать следующей ночи...')
 
     if aut_role == 'врач':
         # в список ночных действий передаем кортэж с id выздоровевшего и типом действия [(id, "вылечен")]
-        help_everything.spis_night_move.append((help_everything.dikt_gamers[count_in_spis], 'вылечен'))
+        if (help_everything.dikt_gamers[count_in_spis], 'убит') not in help_everything.spis_night_move:
+            help_everything.spis_night_move.append((help_everything.dikt_gamers[count_in_spis], 'вылечен'))
+        else:
+            for i in range(len(help_everything.spis_night_move)):
+                if help_everything.spis_night_move[i] == (help_everything.dikt_gamers[count_in_spis], 'убит'):
+                    help_everything.spis_night_move[i] = (help_everything.dikt_gamers[count_in_spis], 'вылечен')
 
     if aut_role == 'путана':
         # в список ночных действий передаем кортэж с id запутаненого и типом действия [(id, "запутанен")]
@@ -337,22 +386,23 @@ async def answer(ctx, count_in_spis):
             result = cur.execute("SELECT * FROM players WHERE id = ? AND role = ?;",
                                  (count_in_spis, 'дон')).fetchall()
             if result:
-                await user_name.send(f'Ты оказалмя прав, черт возьми! {chel.name} -'
-                                     f' глава клана мафии, он дон! Будь осторожнее')
+                await user_name.send(f'Ты оказалмя прав, черт возьми! {chel.name} - глава клана мафии, он дон! Будь '
+                                     f'осторожнее')
 
             else:
-                await user_name.send(f'Увы старина, сегодня ты в пролёте! '
-                                     f'{chel.name} - не является частью клана мафии!')
+                await user_name.send(
+                    f'Увы, старина, сегодня ты в пролёте! {chel.name} не является частью клана мафии!'
+                )
 
     if aut_role == 'дон':
         user_name = await bot.fetch_user(id_aut)  # ищем имя пользователя по id
         result = cur.execute("SELECT * FROM players WHERE id = ? AND role = ?;",
                              (count_in_spis, 'шериф')).fetchall()
         if result:
-            await user_name.send(f'Поздравляю сер! {chel.name} - шериф!')
+            await user_name.send(f'Поздравляю, Босс! {chel.name} - шериф!')
         else:
             await user_name.send(f'К сожалению {chel.name} не относится к служителям порядка')
-            
+
 
 def stop_game():  # завершение сессии игры, обнуляем всё
     # вставить обнуление роли Игрок(!)
