@@ -15,10 +15,10 @@ tracemalloc.start()
 intents = discord.Intents.default()
 intents.members = True
 
-TOKEN = 'тут мог бы быть токен'
-MAIN_CHANNEL_ID = 0  # id главного канала
-TOWN_N_CHANNEL_ID = 0  # id города-n
-MAFIA_CHANNEL_ID = 0  # id чата мафии
+TOKEN = 'ODI4NzMyNjY1NjE1ODc2MTE3.YGt3cA.-5n-desmKY5inQEKsTf7eVh8cKA'
+MAIN_CHANNEL_ID = 829821880549900301  # id главного канала
+TOWN_N_CHANNEL_ID = 830168651121688671  # id города-n
+MAFIA_CHANNEL_ID = 834455471926542387  # id чата мафии
 DB = sqlite3.connect('roles_players.sqlite')  # подключаемся к нужной БД (создание курсоров ниже)
 
 # чтобы "активировать" команду пользователь должен написать ">" перед сообщением
@@ -63,10 +63,10 @@ async def night():  # правила для игры, когда все роли
     await town_n_channel.send('(просьба всем участникам не писать в ночной эпизод в чат)')
     help_everything.spis_night_move = []
 
-    # начинаем пробег по всем активным в ночи ролям по плану путана -> мафия -> доктор -> шириф -> дон -> маньяк
+    # начинаем пробег по всем активным в ночи ролям по плану путана -> мафия -> доктор -> шериф -> дон -> маньяк
     # в чём заключается действие каждого игрока см в доп материалах
     # результаты действий игроков записываем в список вида [(имя над кем совершено действие, действие),...()]
-    # типы действий: убит, вылечен, запутанен
+    # типы действий: убит, вылечен, отвлёчен. Для дона и шерифа просто сразу говорим правы они или нет
 
     cur = DB.cursor()  # создаём курсор
 
@@ -78,9 +78,110 @@ async def night():  # правила для игры, когда все роли
         user_name.send(f'Вот игроки к которым мы можем заглянуть, '
                        f'в качестве ответа напиши команду ">answer "номер игрока""')
         for num in help_everything.dikt_gamers:
-            user_name.send(f'{num}- {help_everything[num]}')
-        
+            name = await bot.fetch_user(help_everything.dikt_gamers[num])  # ищем имя пользователя по id
+            user_name.send(f'{num}- {name.name}')
     # путана вводит свой ответ, идём дальше..
+
+    # с мафией всё интереснее, тк она может быть не одна, найдём всех мафиози и выберем случайного,
+    # напишем ему и он отдавать команду с решением
+    result = cur.execute("SELECT * FROM players WHERE role = ?;", ('мафия',)).fetchall()
+    maf_gamer = random.choice(result)  # из всего списка выбираем одного мафиози,
+    # будет что-то такое (1, 'Gavan_terra#0926', 294121877847277568, 'мафия')
+    maf = await bot.fetch_user(maf_gamer[2])  # ищем объект игрока мафии по id
+
+    # а ещё путана может заблокировать действие всего клана мафии,
+    # в этом случаее в spis_night_move будет кортэж вида ('мафия', "отвлечен")
+    # сделаем проверку на это
+    if ('мафия', "отвлечен") in help_everything.spis_night_move:
+        maf.send('К клану мафии сегодня зашла ваша старая знакомая, чтобы выпить чаю, так что сегодня без убийств ^w^')
+    else:
+        maf.send('Пиф-паф, сегодня ты мне расскажешь в кого будет стрелять клан мафии!')
+        user_name.send(f'Вот игроки в которых можно выстрелить, '
+                       f'в качестве ответа напиши команду ">answer "номер игрока""')
+        result = cur.execute("SELECT id FROM players WHERE role = ?;", ('мафия',)).fetchall()
+        sp_maf_id = []  # создаём список id мафии, чтобы исключить их из вариантов ответа
+        for i in result:
+            sp_maf_id.append(*i)
+        # получаем что-то вроде [3, 4, 5
+
+        for num in help_everything.dikt_gamers:  # создаём варианты ответов, исключая мафию
+            if num not in sp_maf_id:  # если id num нет в списке мафии
+                name = await bot.fetch_user(help_everything.dikt_gamers[num])  # ищем имя пользователя по id
+                user_name.send(f'{num}- {name.name}')  # предлагаем как вариант
+        # мафия делает свой выбор, а мы идём дальше
+
+    result = cur.execute("SELECT * FROM players WHERE role = ?;", ('доктор',)).fetchall()
+    if result:
+        id_dok = result[0][2]  # определяем id игрока доктора
+        user_name = await bot.fetch_user(result[0][2])  # ищем доктора пользователя по id
+        if (id, 'отвлечен') in help_everything.spis_night_move:
+            user_name.send('Доктор, к тебе зашла твоя старая знакомая выпить чаю.'
+                           ' Вы до поздна обсуждали свои проблеммы и ты не смог выйти на врачевание это ночью :/')
+        else:
+            await user_name.send('Док, на улицах творится беспредел, твоя помощь как никогда важна!')
+            await user_name.send(
+                'Это те, кто могут пострадать. В качестве ответа напиши команду ">answer "номер игрока""')
+            for num in help_everything.dikt_gamers:
+                name = await bot.fetch_user(help_everything.dikt_gamers[num])  # ищем имя пользователя по id
+                user_name.send(f'{num}- {name.name}')
+            # док делает своё выбор, идём дальше
+
+    result = cur.execute("SELECT * FROM players WHERE role = ?;", ('шериф',)).fetchall()
+    if result:
+        id_sher = result[0][2]
+        user_name = await bot.fetch_user(id_sher)  # ищем шерифа по id
+        if (id, 'отвлечен') in help_everything.spis_night_move:  # смотрим чаёвничала ли путана с шерифом
+            user_name.send('Старина, к тебе зашла твоя старая знакомая выпить чаю и поболтать :)'
+                           ' Вы так долго обсуждали проблемы, что ты забыл проверить жителей сегодня')
+        else:  # если путана не приходила к шерифу выводим ему варианты ответа
+            await user_name.send('Ну что дружище, кого будем проверять сегодня?')
+            await user_name.send(
+                'Это те, кто можно проверить. В качестве ответа напиши команду ">answer "номер игрока""')
+            for num in help_everything.dikt_gamers:
+                name = await bot.fetch_user(help_everything.dikt_gamers[num])  # ищем имя пользователя по id
+                user_name.send(f'{num}- {name.name}')
+            # шриф делает свой выбор, идём дальше
+
+    result = cur.execute("SELECT * FROM players WHERE role = ?;", ('дон',)).fetchall()
+    if result:
+        id_don = result[0][2]
+        user_name = await bot.fetch_user(id_don)  # ищем шерифа по id
+        if (id, 'отвлечен') in help_everything.spis_night_move:  # смотрим чаёвничала ли путана с шерифом
+            user_name.send \
+                ('Сэр, к Вам зашла Ваша старая знакомая выпить чаю и поболтать :) После приятной беседы Вы '
+                 'понимаете, что не хотите сегодня искать шерифа и решаете отдохнуть')
+        else:  # если путана не приходила к дону выводим ему варианты ответа
+            await user_name.send('Кого проверить сегодня?')
+            await user_name.send(
+                'Это те, кто можно проверить. В качестве ответа напиши команду ">answer "номер игрока""')
+            for num in help_everything.dikt_gamers:
+                name = await bot.fetch_user(help_everything.dikt_gamers[num])  # ищем имя пользователя по id
+                user_name.send(f'{num}- {name.name}')
+            # дон делает свой выбор, идём дальше
+
+    result = cur.execute("SELECT * FROM players WHERE role = ?;", ('маньяк ',)).fetchall()
+    if result:
+        id_don = result[0][2]
+        user_name = await bot.fetch_user(id_don)  # ищем шерифа по id
+        if (id, 'отвлечен') in help_everything.spis_night_move:  # смотрим чаёвничала ли путана с шерифом
+            user_name.send \
+                ('Сэр, к Вам зашла Ваша старая знакомая выпить чаю и поболтать :) После приятной беседы Вы '
+                 'понимаете, что не хотите сегодня искать шерифа и решаете отдохнуть')
+        else:  # если путана не приходила к дону выводим ему варианты ответа
+            await user_name.send('Хей-хей! Кого я вижу! Ну что старина, на кого ты направишь свой нож сегодня?')
+            await user_name.send(
+                'Это те, кто можно кокнуть. В качестве ответа напиши команду ">answer "номер игрока""')
+            for num in help_everything.dikt_gamers:
+                name = await bot.fetch_user(help_everything.dikt_gamers[num])  # ищем имя пользователя по id
+                user_name.send(f'{num}- {name.name}')
+            # маньяк делает свой выбор, идём дальше
+
+    # все роли отыграли своё действие. на этом период ночь заканчивается,
+    # у нас есть spis_night_move с итогами дейсвий ночи вида [(id игрока, действие)...] с его помощю подведём итоги днем
+    # те выкинем из БД убитых, обявим того у кого есть алиби (к нему заходила путана пить чай, действие "отвлечен")
+
+    # добавить проверку на выйгрыш одной из сторон (полумостик переход(!))
+    # если с проверки вернётся False начинаем период дня (мостик переход(!))
 
 
 async def rule_for_play():  # правила для игры, когда все роли созданы и игра только началась
@@ -105,7 +206,7 @@ async def rule_for_play():  # правила для игры, когда все 
     что у нас есть на данный момент. Вем спасибо, ждите следующих анонсов')'''
 
     # начинаем циклы день-ночь, мостик переход(!)
-    bot.loop.create_task(night())  # активируем ночь
+    bot.loop.create_task(night())  # активируем ночь, циклы запущены
 
 
 async def distribution(members):  # функция раскидки ролей
@@ -240,6 +341,14 @@ async def distribution_roles():
 
 
 @bot.command()  # помогалка, тут всё понятно
+async def test(ctx):
+    cur = DB.cursor()  # создаём курсор
+    result = cur.execute("SELECT id FROM players WHERE role = ?;", ('мирный',)).fetchall()
+    name = await bot.fetch_user(768054429165027359)  # ищем имя пользователя по id
+    print(name.name)
+
+
+@bot.command()  # помогалка, тут всё понятно
 async def help_me(ctx):
     await ctx.send(f'''Приветик! Я мафия-бот, проект двух лучших женщин в мире: Насти Сарпинской и Гузь Лизы :) 
     Чтобы обратиться ко мне по команде достаточно написать ">твоя команда" (без кавычек) 
@@ -321,10 +430,19 @@ async def answer(ctx, count_in_spis):
         help_everything.spis_night_move.append((help_everything.dikt_gamers[count_in_spis], 'вылечен'))
 
     if aut_role == 'путана':
-        # в список ночных действий передаем кортэж с id запутаненого и типом действия [(id, "запутанен")]
-        help_everything.spis_night_move.append((help_everything.dikt_gamers[count_in_spis], 'запутанен'))
+        # у путаны немного особенная роль, поэтому пришлось подзаморочиться
+        id_chel = help_everything.dikt_gamers[count_in_spis]  # узнаём id игрока над которым совершено действие
+        result = cur.execute("SELECT role FROM players WHERE nick_id = ?;", (id_chel,)).fetchall()
+        aut_chel = result[0][0]  # запоминаеи роль игрока над которым совершено действие
+        if aut_chel == 'мафия':
+            # если путана попадает на одного из мафиозий, то действие блокируется у всего клана (кроме дона конечно)
+            # в список ночных действий передаем кортэж [('мафия', "отвлечен")]
+            help_everything.spis_night_move.append(('мафия', 'отвлечен'))
 
-    # действия шерифа и дона можно не передовать в список
+        # в список ночных действий передаем кортэж с id отвлеченого и типом действия [(id, "отвлечен")]
+        help_everything.spis_night_move.append((id_chel, 'отвлечен'))
+
+    # действия шерифа и дона можно не передовать в список ночных действий, они не влияют
     if aut_role == 'шериф':
         user_name = await bot.fetch_user(id_aut)  # ищем имя пользователя по id
         # проверка на мафию
@@ -352,7 +470,7 @@ async def answer(ctx, count_in_spis):
             await user_name.send(f'Поздравляю сер! {chel.name} - шериф!')
         else:
             await user_name.send(f'К сожалению {chel.name} не относится к служителям порядка')
-            
+
 
 def stop_game():  # завершение сессии игры, обнуляем всё
     # вставить обнуление роли Игрок(!)
